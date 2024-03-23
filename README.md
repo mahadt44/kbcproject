@@ -9,4 +9,5 @@ Running the config-model.lp partial-instantiation.lp ooasp.lp -0 command initial
 
 Test cases:
 1) test case 1: to check for maximum cardinality constaraint. Kindly use the test1-config-model.lp test1-partial-instantiation.lp files
+2) test case 2: to check for minimum cardinality constaraint. Kindly use the test2-config-model.lp test2-partial-instantiation.lp files
 
