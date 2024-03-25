@@ -1,12 +1,35 @@
+limit(40).
+
 % Define class predicate
 ooasp_class(Model, Class) :- ooasp_class(Model, Class, _).
 
 % Define subclass predicate
 ooasp_subclass(Model, SubClass, SuperClass) :- ooasp_subclass(Model, SubClass, SuperClass, _).
 
-% Define association predicate
+% Defne association predicate
 ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2) :-
     ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2, _).
+
+% new components
+{ ooasp_isa(Instance, Class, Object) : Object = 1..N } N :- ooasp_instantiation(Model, Instance), ooasp_class(Model, Class), not ooasp_subclass(Model, _, Class), limit(N).
+
+% associations
+{ ooasp_associated(Instance, Assoc, ID1, ID2) : ooasp_isa(Instance, SC2, ID2) } :- 
+ooasp_instantiation(Model, Instance), ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), ooasp_isa(Instance, SC1, ID1), ooasp_subclass(Model, SC1, Class1), ooasp_subclass(Model, SC2, Class2).
+{ ooasp_associated(Instance, Assoc, ID1, ID2) : ooasp_isa(Instance, Class2, ID2) } :-
+ ooasp_instantiation(Model, Instance), ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), ooasp_isa(Instance, SC1, ID1), ooasp_subclass(Model, SC1, Class1).
+{ ooasp_associated(Instance, Assoc, ID1, ID2) : ooasp_isa(Instance, SC2, ID2) } :- 
+ooasp_instantiation(Model, Instance), ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), ooasp_isa(Instance, Class1, ID1), ooasp_subclass(Model, SC2, Class2).
+{ ooasp_associated(Instance, Assoc, ID1, ID2) : ooasp_isa(Instance, Class2, ID2) } :- 
+ooasp_instantiation(Model, Instance), ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), ooasp_isa(Instance, Class1, ID1).
+
+
+% ensure generated ids are unique for each and check associations
+:- ooasp_isa(Instance, Class1, ID), ooasp_isa(Instance, Class2, ID), Class1 != Class2.
+:- ooasp_isa(Instance, Class2, ID2), not ooasp_associated(Instance, Assoc, _, ID2), ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), MinC1 != 0.
+:- ooasp_isa(Instance, SC1, ID1), not ooasp_associated(Instance, Assoc, ID1, _), ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), ooasp_subclass(Model, SC1, Class1), MinC2 != 0.
+:- ooasp_isa(Instance, Class1, ID1), not ooasp_associated(Instance, Assoc, ID1, _), ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), MinC2 != 0.
+:- ooasp_isa(Instance, SC2, ID2), not ooasp_associated(Instance, Assoc, _, ID2), ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), ooasp_subclass(Model, SC2, Class2), MinC1 != 0.:- ooasp_assoc(Model, Assoc, Class1, MinC1, MaxC1, Class2, MinC2, MaxC2), ooasp_isa(Instance, SC1, ID1), ooasp_isa(Instance, SC2, ID2), ooasp_subclass(Model, SC1, Class1), ooasp_subclass(Model, SC2, Class2), not ooasp_associated(Instance, Assoc, _, ID2).
 
 % Define attribute predicate
 ooasp_attribute(Model, Class, Attribute, Type) :- ooasp_attribute(Model, Class, Attribute, Type, _).
@@ -26,8 +49,8 @@ ooasp_associated(Instance, Assoc, Object1, Object2) :- ooasp_associated(Instance
 
 % Define count_associated_objects/5 to count associated objects
 count_associated_objects(I, A, O1, C2, Count) :-
-    ooasp_associated(I, A, O1, _),    % Ensure A and O1 are grounded
-    ooasp_isa(I, C2, _),              % Ensure C2 is grounded
+    ooasp_associated(I, A, O1, _),   
+    ooasp_isa(I, C2, _),              
     Count = #count {X : ooasp_associated(I, A, O1, X), ooasp_isa(I, C2, X)}.
 
 % Integrity constraint to check minimum cardinality of associations
@@ -66,4 +89,8 @@ ooasp_attribute_value(Instance, Attribute, Object, Value) :- ooasp_attribute_val
 
 
 % Minimize the number of instances
-#minimize { 1, I : ooasp_instantiation(_, I) }.
+#minimize {1, ID : ooasp_isa(Instance,Class,ID)}.
+
+#show ooasp_isa/3.
+#show ooasp_instantiation/2.
+#show ooasp_associated/4.
